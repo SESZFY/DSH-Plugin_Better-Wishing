@@ -186,6 +186,30 @@ dsh-ai4s-stack/
 
 ---
 
+## 维护者：发布到 GitHub
+
+本仓库已 `git init` + 提交 + 打 `v1.0.0` 标签，只差推送。一条命令完成「建仓 + 推 main + 推 tags」：
+
+```powershell
+$env:GITHUB_TOKEN = "ghp_xxx"; .\push.ps1          # Windows
+```
+
+```bash
+GITHUB_TOKEN=ghp_xxx ./push.sh                      # macOS / Linux
+```
+
+Token 权限：classic 勾 `repo`；fine-grained 给 `Contents=write` + `Administration=write`。
+脚本只在进程内用 token，推完 `origin` 仍是干净的 `https://` 地址，不落盘。
+
+不想给 token 也可走网页：GitHub 新建空仓库（不要初始化 README）→
+
+```bash
+git remote add origin https://github.com/Fishquito7/dsh-ai4s-stack.git
+git push -u origin main --tags
+```
+
+---
+
 ## 许可证
 
-MIT。见 [LICENSE](LICENSE)。`packages/dsh-skill-mcp-panel` 沿用其上游 MIT 许可（LICENSE 随包提供）。
+MIT。见 [LICENSE](LICENSE)。`packages/dsh-skill-mcp-panel` 沿用其上游 MIT 许可（LICENSE 随包提供）。该面板在 `Fishquito7/dsh-skill-mcp-panel` 有独立仓库与 npm 发布流水线，本仓为其打包快照（v2.3.16）。
