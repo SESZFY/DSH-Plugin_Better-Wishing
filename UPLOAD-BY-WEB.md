@@ -1,7 +1,12 @@
 # 只用网页也能传：三步搞定主页 + 仓库 + 站点
 
-本机没有任何 GitHub 写凭据（无 `gh`、无 token、凭据管理器里也没有 github 条目），所以自动化推送跑不了。
-下面是纯浏览器路线，**三个目标**分开做，互不依赖：
+> **现状（已完成）**：仓库、主页、Pages 站点都已上线 ——
+> <https://github.com/SESZFY/dsh-ai4s-stack> ・ <https://github.com/SESZFY> ・ <https://seszfy.github.io/dsh-ai4s-stack/>
+>
+> 本文降级为**换机 / 无凭据 / 需要手工重传**时的备用流程。日常更新只要 `git push`（凭据已存在 Git Credential Manager 里）。
+
+本机任何脚本都可能拿不到 GitHub 写凭据（无 `gh`、无 `GITHUB_TOKEN`、凭据管理器里也没有可被脚本直接读到的 github 条目），
+此时自动化推送会失败。下面是纯浏览器路线，**三个目标**分开做，互不依赖：
 
 | 目标 | 做什么 | 完成后地址 |
 |---|---|---|
