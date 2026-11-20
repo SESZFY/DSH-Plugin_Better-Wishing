@@ -2,9 +2,9 @@
 
 两个 [DSH（DeepSeek Harness）](https://github.com/deepseek-ai) 插件打包在一起，一条命令装完。
 
-站点：<https://seszfy.github.io/dsh-ai4s-stack/>（`docs/` 目录，Pages 从 `main` + `/docs` 发布）
+站点：<https://seszfy.github.io/dsh-ai4s-stack/> —— 已上线（Pages 源：`main` + `/docs`）
 
-> 还没推上去、或要用网页上传？看 [UPLOAD-BY-WEB.md](UPLOAD-BY-WEB.md)：纯浏览器完成「主页 + 仓库 + 站点」三件事。
+> 需要用浏览器手动传的场合（换机、无凭据）：看 [UPLOAD-BY-WEB.md](UPLOAD-BY-WEB.md)。
 
 | 插件 | 作用 | 形态 |
 |---|---|---|
