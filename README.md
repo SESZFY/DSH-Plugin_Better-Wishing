@@ -1,6 +1,10 @@
 # dsh-ai4s-stack
 
-两个 [DSH（DeepSeek Harness）](https://github.com/deepseek-ai) 插件打包在一起，一条命令装完：
+两个 [DSH（DeepSeek Harness）](https://github.com/deepseek-ai) 插件打包在一起，一条命令装完。
+
+站点：<https://seszfy.github.io/dsh-ai4s-stack/>（`docs/` 目录，Pages 从 `main` + `/docs` 发布）
+
+> 还没推上去、或要用网页上传？看 [UPLOAD-BY-WEB.md](UPLOAD-BY-WEB.md)：纯浏览器完成「主页 + 仓库 + 站点」三件事。
 
 | 插件 | 作用 | 形态 |
 |---|---|---|
@@ -16,25 +20,25 @@
 ### Windows（PowerShell）
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1)))
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1)))
 ```
 
 带参数（指定 profile、直接切集群模式并指定子代理模型）：
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1))) `
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1))) `
     -Profile web -Mode cluster -ClusterModel "openrouter/deepseek-v3.2"
 ```
 
 ### macOS / Linux / WSL / Git Bash
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh | bash
 ```
 
 ```bash
 # 带参数
-curl -fsSL https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh \
   | bash -s -- --profile web --mode cluster --cluster openrouter/deepseek-v3.2
 ```
 
@@ -139,7 +143,7 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
 dsh plugin --profile web add dsh-skill-mcp-panel
 
 # 从 GitHub 装（源码目录形式，两个包都可以）
-git clone https://github.com/Fishquito7/dsh-ai4s-stack.git
+git clone https://github.com/SESZFY/dsh-ai4s-stack.git
 dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-skill-mcp-panel
 dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-ai4s-composer
 ```
@@ -242,7 +246,7 @@ Token 权限：classic 勾 `repo`；fine-grained 给 `Contents=write` + `Adminis
 不想给 token 也可走网页：GitHub 新建空仓库（不要初始化 README）→
 
 ```bash
-git remote add origin https://github.com/Fishquito7/dsh-ai4s-stack.git
+git remote add origin https://github.com/SESZFY/dsh-ai4s-stack.git
 git push -u origin main --tags
 ```
 
@@ -250,4 +254,4 @@ git push -u origin main --tags
 
 ## 许可证
 
-MIT。见 [LICENSE](LICENSE)。`packages/dsh-skill-mcp-panel` 沿用其上游 MIT 许可（LICENSE 随包提供）。该面板在 `Fishquito7/dsh-skill-mcp-panel` 有独立仓库与 npm 发布流水线，本仓为其打包快照（v2.3.16）。
+MIT。见 [LICENSE](LICENSE)。`packages/dsh-skill-mcp-panel` 沿用其上游 MIT 许可（LICENSE 随包提供）。该面板在 `SESZFY/dsh-skill-mcp-panel` 有独立仓库与 npm 发布流水线，本仓为其打包快照（v2.3.16）。

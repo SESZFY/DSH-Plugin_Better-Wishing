@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # dsh-ai4s-stack 一键安装器（macOS / Linux / WSL / Git Bash）
 #
-#   curl -fsSL https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh | bash
 #   curl -fsSL .../install.sh | bash -s -- --profile web --mode cluster --cluster openrouter/deepseek-v3.2
 #
 set -euo pipefail
 
 MCP_PANEL="dsh-skill-mcp-panel"
 AI4S="dsh-ai4s-composer"
-REPO_URL="https://github.com/Fishquito7/dsh-ai4s-stack"
+REPO_URL="https://github.com/SESZFY/dsh-ai4s-stack"
 REF="main"
 PROFILE=""
 MODE=""

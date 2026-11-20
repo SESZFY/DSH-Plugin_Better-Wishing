@@ -6,7 +6,7 @@
 #
 set -euo pipefail
 
-OWNER="${GITHUB_OWNER:-Fishquito7}"
+OWNER="${GITHUB_OWNER:-SESZFY}"
 REPO="${GITHUB_REPO:-dsh-ai4s-stack}"
 TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
 DESC="DSH 插件合集：技能/MCP 管理面板 + 全自动 AI4S 模式，附一键安装"

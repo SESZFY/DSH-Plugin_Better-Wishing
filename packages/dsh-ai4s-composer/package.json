@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "description": "全自动 AI4S 模式：为 DSH 提供 quick / solo / delegate / cluster 四种编排模式，自动派发只读子代理并把结论回灌主代理。",
-  "homepage": "https://github.com/Fishquito7/dsh-ai4s-stack/tree/main/packages/dsh-ai4s-composer#readme",
+  "homepage": "https://github.com/SESZFY/dsh-ai4s-stack/tree/main/packages/dsh-ai4s-composer#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Fishquito7/dsh-ai4s-stack.git",
+    "url": "git+https://github.com/SESZFY/dsh-ai4s-stack.git",
     "directory": "packages/dsh-ai4s-composer"
   },
   "bugs": {
-    "url": "https://github.com/Fishquito7/dsh-ai4s-stack/issues"
+    "url": "https://github.com/SESZFY/dsh-ai4s-stack/issues"
   },
   "keywords": [
     "dsh",

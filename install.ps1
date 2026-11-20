@@ -18,10 +18,10 @@
   breaks `powershell -File` parsing on Windows PowerShell 5.1.
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1)))
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1)))
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1))) `
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1))) `
       -Profile web -Mode cluster -ClusterModel "openrouter/deepseek-v3.2"
 
 .EXAMPLE
@@ -44,7 +44,7 @@ param(
   [string]$ClusterModel,
   [string]$Ref = 'main',
   [string]$Source,
-  [string]$RepoUrl = 'https://github.com/Fishquito7/dsh-ai4s-stack',
+  [string]$RepoUrl = 'https://github.com/SESZFY/dsh-ai4s-stack',
   [string]$StageDir,
   [string]$DshBin,
   [string[]]$With = @('mcp-panel', 'ai4s'),

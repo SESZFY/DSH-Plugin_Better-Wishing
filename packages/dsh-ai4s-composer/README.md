@@ -21,13 +21,13 @@
 
 ```powershell
 # Windows PowerShell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1))) -Profile web
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1))) -Profile web
 ```
 
 单独装这一个包：
 
 ```bash
-dsh plugin --profile web add github:Fishquito7/dsh-ai4s-stack#path:/packages/dsh-ai4s-composer
+dsh plugin --profile web add github:SESZFY/dsh-ai4s-stack#path:/packages/dsh-ai4s-composer
 # 或已 clone 到本地
 dsh plugin --profile web add E:/path/to/dsh-ai4s-stack/packages/dsh-ai4s-composer
 ```

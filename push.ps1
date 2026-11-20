@@ -22,7 +22,7 @@
 [CmdletBinding()]
 param(
   [string]$Token,
-  [string]$Owner = 'Fishquito7',
+  [string]$Owner = 'SESZFY',
   [string]$Repo = 'dsh-ai4s-stack',
   [string]$Description = 'DSH plugins: skills/MCP panel + full-auto AI4S composer, with one-click install',
   [switch]$Private,

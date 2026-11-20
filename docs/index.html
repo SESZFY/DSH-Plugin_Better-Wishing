@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-ai4s-stack · DSH 插件合集</title>
+<meta name="description" content="技能/MCP 管理面板 + 全自动 AI4S 模式，两个 DSH 插件打包在一起，一条命令装完。">
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --panel-2:#0f151d; --line:#1f2a37;
+    --fg:#e6edf3; --dim:#8b98a8; --acc:#4ac9a8; --acc-2:#6aa6ff; --warn:#e2b33c;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:radial-gradient(1100px 600px at 80% -10%,#12212b 0%,var(--bg) 55%) no-repeat,var(--bg);
+    color:var(--fg);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:56px 22px 80px}
+  header h1{font-size:34px;line-height:1.25;margin:0 0 10px;letter-spacing:-.5px}
+  header h1 code{font-family:var(--mono);font-size:.92em;color:var(--acc)}
+  header p.lede{color:var(--dim);margin:0 0 22px;font-size:16.5px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 34px}
+  .badge{font:12.5px/1 var(--mono);color:var(--dim);border:1px solid var(--line);background:var(--panel-2);
+    border-radius:999px;padding:7px 12px}
+  .badge b{color:var(--acc)}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    margin:44px 0 14px;font-weight:600}
+  h2:first-of-type{margin-top:0}
+  .cards{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+  @media(max-width:720px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;transition:.18s}
+  .card:hover{border-color:#2b3d4f;transform:translateY(-1px)}
+  .card h3{margin:0 0 4px;font-size:17px}
+  .card .pkg{font-family:var(--mono);font-size:12.5px;color:var(--acc-2);word-break:break-all}
+  .card p{color:var(--dim);font-size:14.5px;margin:9px 0 0}
+  .card ul{margin:11px 0 0;padding-left:18px;color:var(--dim);font-size:14px}
+  .card li{margin:3px 0}
+  .code{margin:12px 0 0;background:#080c11;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .code .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 12px;border-bottom:1px solid var(--line);background:#0a1017}
+  .code .bar span{font:12px/1 var(--mono);color:var(--dim)}
+  .code pre{margin:0;padding:14px 14px;overflow-x:auto;font:13.2px/1.65 var(--mono);color:#cfe3dc}
+  .code pre .c{color:#5b6b7c}
+  button.copy{font:12px/1 var(--mono);color:var(--dim);background:#131c25;border:1px solid var(--line);
+    border-radius:7px;padding:6px 9px;cursor:pointer;transition:.15s}
+  button.copy:hover{color:var(--acc);border-color:#2f4a44}
+  button.copy.done{color:var(--acc);border-color:#2f4a44}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:6px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:13px;letter-spacing:.04em}
+  td code{font-family:var(--mono);font-size:13px;color:var(--acc)}
+  .note{border-left:3px solid var(--warn);background:#161208;border-radius:0 10px 10px 0;
+    padding:12px 14px;color:#d9cba6;font-size:14.5px;margin:16px 0 0}
+  footer{margin-top:52px;padding-top:20px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+  a{color:var(--acc-2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tree{font:13px/1.75 var(--mono);color:#a9bcc9;background:#080c11;border:1px solid var(--line);
+    border-radius:12px;padding:15px 16px;overflow-x:auto;margin:0}
+  .tree i{color:#5b6b7c;font-style:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1><code>dsh-ai4s-stack</code></h1>
+  <p class="lede">两个 <a href="https://github.com/SESZFY">DSH（DeepSeek Harness）</a> 插件打包在一起：一个管「装什么能力」，一个管「怎么自动干活」。一条命令装完。</p>
+  <div class="badges">
+    <span class="badge"><b>MIT</b></span>
+    <span class="badge">panel <b>2.3.16</b></span>
+    <span class="badge">composer <b>1.0.0</b></span>
+    <span class="badge">Windows / macOS / Linux</span>
+    <span class="badge">零运行时依赖</span>
+  </div>
+</header>
+
+<h2>两个插件</h2>
+<div class="cards">
+  <div class="card">
+    <h3>技能 + MCP 面板</h3>
+    <div class="pkg">dsh-skill-mcp-panel</div>
+    <p>web 侧栏管理 skills 与 MCP servers，含统一 CLI。</p>
+    <ul>
+      <li>技能分组 / 导入 / 迁移</li>
+      <li>MCP 服务器增删改、探活、OAuth</li>
+      <li>CLI：<code>dsh-panel</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>全自动 AI4S 模式</h3>
+    <div class="pkg">dsh-ai4s-composer</div>
+    <p>四档编排：自动决定开不开子代理、开几个、用哪个模型。</p>
+    <ul>
+      <li><code>quick</code> / <code>solo</code> / <code>delegate</code> / <code>cluster</code></li>
+      <li>子代理强制只读，执行动作回到主代理</li>
+      <li>结论经 systemPrompt 回灌</li>
+    </ul>
+  </div>
+</div>
+
+<h2>一键安装</h2>
+
+<div class="code">
+  <div class="bar"><span>Windows · PowerShell</span><button class="copy" data-copy="ps">复制</button></div>
+<pre id="cmd-ps">&amp; ([scriptblock]::Create((irm https://github.com/SESZFY/dsh-ai4s-stack/raw/main/install.ps1)))</pre>
+</div>
+
+<div class="code">
+  <div class="bar"><span>macOS / Linux / WSL · bash</span><button class="copy" data-copy="sh">复制</button></div>
+<pre id="cmd-sh">curl -fsSL https://github.com/SESZFY/dsh-ai4s-stack/raw/main/install.sh | bash</pre>
+</div>
+
+<div class="code">
+  <div class="bar"><span>带参数（指定 profile、直接切集群模式）</span><button class="copy" data-copy="arg">复制</button></div>
+<pre id="cmd-arg">&amp; ([scriptblock]::Create((irm https://github.com/SESZFY/dsh-ai4s-stack/raw/main/install.ps1))) `
+    -Profile web -Mode cluster -ClusterModel "openrouter/deepseek-v3.2"</pre>
+</div>
+
+<p class="note">桌面端（<code>desktop</code> profile）由 Electron 独占，CLI 装不进去。用
+<code>.\install.ps1 -Profile desktop -Manual -Apply</code> 走清单补丁模式，或直接在 DSH 的「设置 → 插件」里装。</p>
+
+<h2>安装器做了什么</h2>
+<table>
+  <tr><th>步骤</th><th>说明</th></tr>
+  <tr><td>1</td><td>探测 node / pnpm / <code>dsh</code> CLI / <code>$DSH_HOME/profiles/*</code></td></tr>
+  <tr><td>2</td><td>缺 pnpm 就 <code>npm i -g pnpm</code>（<code>dsh plugin</code> 的底层依赖）</td></tr>
+  <tr><td>3</td><td>下载本仓库源码到缓存目录，只下一次</td></tr>
+  <tr><td>4</td><td>调官方 <code>dsh plugin --profile &lt;name&gt; add &lt;目录&gt;</code>，两个包各一条</td></tr>
+  <tr><td>5</td><td>回读 profile 的 <code>package.json</code>，确认两个包都进了 <code>dsh.profile.bundles</code></td></tr>
+  <tr><td>6</td><td>可选：写入 AI4S 模式偏好</td></tr>
+</table>
+
+<h2>四种模式</h2>
+<table>
+  <tr><th>模式</th><th>行为</th></tr>
+  <tr><td><code>quick</code></td><td>不开子代理，主代理直接做</td></tr>
+  <tr><td><code>solo</code></td><td>原生行为，默认值</td></tr>
+  <tr><td><code>delegate</code></td><td>每轮自动开 1 个只读子代理，结论回灌</td></tr>
+  <tr><td><code>cluster</code></td><td>先规划拆分子任务，再并行开多个子代理，可中途追加</td></tr>
+</table>
+
+<h2>仓库结构</h2>
+<p class="tree">dsh-ai4s-stack/
+├── install.ps1              <i># 一键安装（Windows）</i>
+├── install.sh               <i># 一键安装（macOS/Linux/WSL）</i>
+├── push.ps1 / push.sh       <i># 建仓 + 推 main + 推 tags</i>
+├── docs/index.html          <i># 本页</i>
+└── packages/
+    ├── dsh-skill-mcp-panel/ <i># 技能 + MCP 面板</i>
+    └── dsh-ai4s-composer/   <i># 全自动 AI4S 模式</i></p>
+
+<footer>
+  <a href="https://github.com/SESZFY/dsh-ai4s-stack">源码</a> ·
+  <a href="https://github.com/SESZFY/dsh-ai4s-stack/blob/main/README.md">完整文档</a> ·
+  <a href="https://github.com/SESZFY/dsh-ai4s-stack/issues">反馈</a><br>
+  MIT Licensed · 2026
+</footer>
+
+</div>
+<script>
+document.querySelectorAll('button.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pre = btn.closest('.code').querySelector('pre');
+    var text = pre.textContent;
+    var done = function () {
+      var old = btn.textContent;
+      btn.textContent = '已复制';
+      btn.classList.add('done');
+      setTimeout(function () { btn.textContent = old; btn.classList.remove('done'); }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else { fallback(text, done); }
+  });
+});
+function fallback(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
