@@ -1,0 +1,14 @@
+* text=auto
+
+# 安装器必须保持原生换行，否则在对方机器上会因 CRLF 报错
+*.sh    text eol=lf
+*.mjs   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.ps1   text eol=crlf
+
+# 二进制
+*.png   binary
+*.svg   text eol=lf

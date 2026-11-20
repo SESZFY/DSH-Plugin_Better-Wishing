@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "全自动AI4S模式",
+    "description": "Automatic Delegate and Cluster subagents with a separate model preference per mode."
+  }
+}
