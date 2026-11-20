@@ -1,36 +1,40 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  dsh-ai4s-stack 一键安装器（Windows / PowerShell）
+  dsh-ai4s-stack one-click installer (Windows / PowerShell).
 
 .DESCRIPTION
-  把两个 DSH 插件装进指定 profile：
-    * dsh-skill-mcp-panel   —— 技能 + MCP 管理面板（含 dsh-panel CLI）
-    * dsh-ai4s-composer     —— 全自动 AI4S 模式（quick / solo / delegate / cluster）
+  Installs two DSH plugins into a profile:
+    * dsh-skill-mcp-panel  - skills + MCP management panel (ships the dsh-panel CLI)
+    * dsh-ai4s-composer    - full-auto AI4S mode (quick / solo / delegate / cluster)
 
-  安装动作全部通过官方 `dsh plugin --profile <name> add <spec>` 完成：
-  profile 的 dependencies 与 dsh.profile.bundles 由 DSH 自己的 plugin-manager 维护。
+  Installation goes through the official `dsh plugin --profile <name> add <spec>`
+  command: profile dependencies and dsh.profile.bundles are maintained by DSH's
+  own plugin-manager. The `desktop` profile is Electron-exclusive and rejects the
+  CLI, so it is handled by a text-level patch of its manifest instead.
+
+  NOTE: this file is deliberately ASCII-only. A UTF-8 BOM breaks
+  [scriptblock]::Create((irm ...)), and a BOM-less UTF-8 file with non-ASCII text
+  breaks `powershell -File` parsing on Windows PowerShell 5.1.
 
 .EXAMPLE
-  # 最省事：全部默认（自动探测 profile，装两个插件）
   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1)))
 
 .EXAMPLE
-  # 指定 profile 并直接切到集群模式
   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/install.ps1))) `
       -Profile web -Mode cluster -ClusterModel "openrouter/deepseek-v3.2"
 
 .EXAMPLE
-  # 从本地已 clone 的仓库装（不联网）
   .\install.ps1 -Source . -Profile web
 
 .EXAMPLE
-  # 只看环境探测结果，不安装
   .\install.ps1 -Check
 
 .EXAMPLE
-  # 卸载
-  .\install.ps1 -Uninstall
+  .\install.ps1 -Profile desktop -Manual -Apply
+
+.EXAMPLE
+  .\install.ps1 -Uninstall -Profile web
 #>
 [CmdletBinding()]
 param(
@@ -46,18 +50,19 @@ param(
   [string[]]$With = @('mcp-panel', 'ai4s'),
   [switch]$Uninstall,
   [switch]$NoFetch,
-  [switch]$Check
+  [switch]$Check,
+  [switch]$Manual,
+  [switch]$Apply
 )
 
 $ErrorActionPreference = 'Stop'
-try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
 $script:PackageMap = [ordered]@{
-  'mcp-panel' = @{ Dir = 'packages/dsh-skill-mcp-panel'; Name = 'dsh-skill-mcp-panel'; Label = '技能 + MCP 面板' }
-  'ai4s'      = @{ Dir = 'packages/dsh-ai4s-composer';  Name = 'dsh-ai4s-composer';  Label = '全自动 AI4S 模式' }
+  'mcp-panel' = @{ Dir = 'packages/dsh-skill-mcp-panel'; Name = 'dsh-skill-mcp-panel'; Label = 'skills + MCP panel' }
+  'ai4s'      = @{ Dir = 'packages/dsh-ai4s-composer';  Name = 'dsh-ai4s-composer';  Label = 'full-auto AI4S mode' }
 }
 
-# ---------------------------------------------------------------- 输出
+# ---------------------------------------------------------------- output
 function Say-Step($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
 function Say-Ok($m)   { Write-Host "  [OK]   $m" -ForegroundColor Green }
 function Say-Info($m) { Write-Host "  [..]   $m" -ForegroundColor Gray }
@@ -67,7 +72,7 @@ function Fail($m) {
   exit 1
 }
 
-# ---------------------------------------------------------------- 环境探测
+# ---------------------------------------------------------------- detect
 function Get-DshHome {
   if ($env:DSH_HOME) { return $env:DSH_HOME }
   return (Join-Path $HOME '.dsh')
@@ -75,26 +80,43 @@ function Get-DshHome {
 
 function Resolve-DshCli {
   if ($DshBin) {
-    if (-not (Test-Path -LiteralPath $DshBin)) { Fail "指定的 -DshBin 不存在: $DshBin" }
+    if (-not (Test-Path -LiteralPath $DshBin)) { Fail "-DshBin does not exist: $DshBin" }
     return (Resolve-Path -LiteralPath $DshBin).Path
   }
   $cmd = Get-Command dsh -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
 
+  $binRel = 'node_modules\@deepseek-ai\dsh\lib\bin.js'
+
   $roots = @()
   if ($env:DSH_APP_DIR) { $roots += $env:DSH_APP_DIR }
-  foreach ($drive in @('C', 'D', 'E')) {
-    foreach ($name in @('DSH 科研站', 'DSH', 'DeepSeek Harness')) {
-      $roots += "${drive}:\$name\resources\app\dsh"
-      $roots += "${drive}:\Program Files\$name\resources\app\dsh"
-    }
-  }
   $roots += (Join-Path $env:LOCALAPPDATA 'Programs\dsh\resources\app\dsh')
   $roots += (Join-Path $env:LOCALAPPDATA 'Programs\DeepSeek Harness\resources\app\dsh')
-
   foreach ($root in $roots) {
-    $candidate = Join-Path $root 'node_modules\@deepseek-ai\dsh\lib\bin.js'
+    if (-not $root) { continue }
+    $candidate = Join-Path $root $binRel
     if (Test-Path -LiteralPath $candidate) { return $candidate }
+  }
+
+  # Electron install directories are often renamed (and may contain non-ASCII
+  # characters), so enumerate candidates instead of hardcoding names.
+  $bases = @()
+  foreach ($drive in @('C', 'D', 'E', 'F')) { if (Test-Path -LiteralPath "${drive}:\") { $bases += "${drive}:\" } }
+  foreach ($pf in @('Program Files', 'Program Files (x86)')) {
+    $p = Join-Path $env:SystemDrive $pf
+    if (Test-Path -LiteralPath $p) { $bases += $p }
+  }
+  if ($env:LOCALAPPDATA) { $bases += (Join-Path $env:LOCALAPPDATA 'Programs') }
+
+  foreach ($base in $bases) {
+    $dirs = @(Get-ChildItem -LiteralPath $base -Directory -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -like 'DSH*' -or $_.Name -like '*DeepSeek*' -or $_.Name -like '*Harness*' })
+    foreach ($d in $dirs) {
+      foreach ($sub in @('resources\app\dsh', 'app\dsh', 'resources\app', '')) {
+        $candidate = if ($sub) { Join-Path $d.FullName (Join-Path $sub $binRel) } else { Join-Path $d.FullName $binRel }
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+      }
+    }
   }
   return $null
 }
@@ -118,28 +140,25 @@ function Resolve-Profile {
   param([string]$Requested, [string[]]$Available)
   if ($Requested) {
     if ($Requested -eq 'desktop') {
-      Fail @"
-profile "desktop" 由 Electron 独占，命令行无法安装。
-请在 DSH 桌面端的「设置 → 插件」里安装，或改用 web/headless profile：
-  install.ps1 -Profile web
-"@
+      Say-Info 'desktop profile is Electron-exclusive; switching to manifest-patch mode.'
+      return 'desktop'
     }
     if ($Available -notcontains $Requested) {
-      Say-Warn "profile ""$Requested"" 目前不存在，DSH 会按内置模板新建一个。"
+      Say-Warn "profile ""$Requested"" does not exist yet; DSH will create it from a template."
     }
     return $Requested
   }
   $candidates = @($Available | Where-Object { $_ -ne 'desktop' })
   if ($candidates.Count -eq 1) { return $candidates[0] }
   if ($candidates -contains 'web') {
-    Say-Info "未指定 -Profile，自动选用 web。"
+    Say-Info 'no -Profile given, using web.'
     return 'web'
   }
   if ($candidates.Count -eq 0) {
-    Say-Info "未发现可用 profile，使用 web。"
+    Say-Info 'no profile found, using web.'
     return 'web'
   }
-  Fail ("检测到多个 profile，请用 -Profile 指定其中一个: " + ($candidates -join ', '))
+  Fail ("multiple profiles found, pick one with -Profile: " + ($candidates -join ', '))
 }
 
 function Ensure-Pnpm {
@@ -148,38 +167,38 @@ function Ensure-Pnpm {
   $guess = Join-Path $env:APPDATA 'npm\pnpm.cmd'
   if (Test-Path -LiteralPath $guess) { return $guess }
 
-  Say-Warn '未找到 pnpm，`dsh plugin` 依赖它。正在安装 pnpm ...'
+  Say-Warn 'pnpm not found; `dsh plugin` needs it. Installing pnpm ...'
   $npm = Get-Command npm -ErrorAction SilentlyContinue
-  if (-not $npm) { Fail '未找到 npm。请先安装 Node.js 20+（https://nodejs.org），再重跑本脚本。' }
+  if (-not $npm) { Fail 'npm not found. Install Node.js 20+ first (https://nodejs.org).' }
   & npm install -g pnpm --no-audit --no-fund
-  if ($LASTEXITCODE -ne 0) { Fail 'npm install -g pnpm 失败，请手动安装 pnpm 后重试。' }
+  if ($LASTEXITCODE -ne 0) { Fail 'npm install -g pnpm failed. Install pnpm manually and retry.' }
 
   $pnpm = Get-Command pnpm -ErrorAction SilentlyContinue
   if ($pnpm) { return $pnpm.Source }
   if (Test-Path -LiteralPath $guess) { return $guess }
-  Fail 'pnpm 安装后仍无法定位，请手动安装后重试。'
+  Fail 'pnpm is still not resolvable after install.'
 }
 
-# ---------------------------------------------------------------- 取源
+# ---------------------------------------------------------------- source
 function Resolve-StackRoot {
   if ($Source) {
-    if (-not (Test-Path -LiteralPath $Source)) { Fail "指定的 -Source 不存在: $Source" }
+    if (-not (Test-Path -LiteralPath $Source)) { Fail "-Source does not exist: $Source" }
     $resolved = (Resolve-Path -LiteralPath $Source).Path
     if (Test-Path -LiteralPath (Join-Path $resolved 'packages\dsh-ai4s-composer\package.json')) { return $resolved }
     if (Test-Path -LiteralPath (Join-Path $resolved 'dsh-ai4s-stack\packages\dsh-ai4s-composer\package.json')) {
       return (Join-Path $resolved 'dsh-ai4s-stack')
     }
-    Fail "-Source 指向的目录里没有 packages\dsh-ai4s-composer: $resolved"
+    Fail "-Source has no packages\dsh-ai4s-composer: $resolved"
   }
   if ($NoFetch) {
-    if (-not $StageDir) { Fail '-NoFetch 需要同时给 -StageDir（已下载的源码目录）。' }
+    if (-not $StageDir) { Fail '-NoFetch needs -StageDir pointing at downloaded sources.' }
     return (Resolve-Path -LiteralPath $StageDir).Path
   }
 
   $target = if ($StageDir) { $StageDir } else { Join-Path $env:LOCALAPPDATA "dsh-ai4s-stack\$Ref" }
   $marker = Join-Path $target 'packages\dsh-ai4s-composer\package.json'
   if (Test-Path -LiteralPath $marker) {
-    Say-Ok "复用已下载源码: $target"
+    Say-Ok "reusing downloaded sources: $target"
     return $target
   }
 
@@ -193,148 +212,275 @@ function Resolve-StackRoot {
   $ok = $false
   foreach ($url in $urls) {
     try {
-      Say-Info "下载 $url"
+      Say-Info "downloading $url"
       Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -TimeoutSec 120
       $ok = $true
       break
     } catch {
-      Say-Warn ("下载失败: " + $_.Exception.Message)
+      Say-Warn ("download failed: " + $_.Exception.Message)
     }
   }
   if (-not $ok) {
     Fail @"
-源码下载失败。可选做法：
-  1) 配好代理后重试；本机 git 走代理需要:
+Source download failed. Options:
+  1) configure a proxy and retry. git needs its own proxy setting:
      git config --global http.https://github.com.proxy http://127.0.0.1:7897
-  2) 手动 clone 后用本地路径安装:
+  2) clone manually and install from a local path:
      git clone $RepoUrl
      .\install.ps1 -Source .\dsh-ai4s-stack
 "@
   }
 
-  try { Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $tmp 'x') -Force } catch { Fail ("解压失败: " + $_.Exception.Message) }
+  try { Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $tmp 'x') -Force }
+  catch { Fail ("unzip failed: " + $_.Exception.Message) }
   $inner = Get-ChildItem -LiteralPath (Join-Path $tmp 'x') -Directory | Select-Object -First 1
-  if (-not $inner) { Fail '下载的压缩包结构异常（没有顶层目录）。' }
+  if (-not $inner) { Fail 'downloaded archive has no top-level directory.' }
 
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
   if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
   Move-Item -LiteralPath $inner.FullName -Destination $target
   Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
-  Say-Ok "源码就位于 $target"
+  Say-Ok "sources staged at $target"
   return $target
 }
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- desktop manifest patch
+# `dsh plugin --profile desktop` is rejected by the CLI (Electron-exclusive), so the
+# manifest is patched at text level: one line into dependencies and one into
+# dsh.profile.bundles, everything else preserved byte for byte.
+# Backup is written before the change and the result is JSON-validated; on any
+# parse failure nothing is written at all.
+
+function Find-BlockEnd {
+  param([string]$Text, [int]$OpenIndex, [char]$Open, [char]$Close)
+  $depth = 0
+  $inString = $false
+  for ($i = $OpenIndex; $i -lt $Text.Length; $i++) {
+    $c = $Text[$i]
+    if ($inString) {
+      if ($c -eq '\') { $i++; continue }
+      if ($c -eq '"') { $inString = $false }
+      continue
+    }
+    if ($c -eq '"') { $inString = $true; continue }
+    if ($c -eq $Open) { $depth++ }
+    elseif ($c -eq $Close) { $depth--; if ($depth -eq 0) { return $i } }
+  }
+  return -1
+}
+
+function Insert-JsonItem {
+  param([string]$Text, [int]$Open, [int]$Close, [string]$Item, [int]$Indent)
+  $pad = ' ' * $Indent
+  $i = $Close - 1
+  while ($i -gt $Open -and [char]::IsWhiteSpace($Text[$i])) { $i-- }
+  if ($i -eq $Open) {
+    return $Text.Substring(0, $Open + 1) + "`n$pad$Item`n" + $Text.Substring($Close)
+  }
+  return $Text.Substring(0, $i + 1) + ",`n$pad$Item" + $Text.Substring($i + 1)
+}
+
+function Add-DesktopEntry {
+  param([string]$ManifestPath, [string]$PackageName, [string]$LinkPath)
+
+  $text = [IO.File]::ReadAllText($ManifestPath, [Text.Encoding]::UTF8)
+  $original = $text
+
+  if ($text -match [regex]::Escape('"' + $PackageName + '"')) {
+    Say-Info "$PackageName already in profile manifest, skipped"
+    return $false
+  }
+
+  # 1) dependencies
+  $depMatch = [regex]::Match($text, '"dependencies"\s*:\s*\{')
+  if (-not $depMatch.Success) { Fail "manifest has no dependencies block: $ManifestPath" }
+  $open = $text.IndexOf('{', $depMatch.Index)
+  $close = Find-BlockEnd -Text $text -OpenIndex $open -Open '{' -Close '}'
+  if ($close -lt 0) { Fail 'unbalanced braces in dependencies' }
+  $text = Insert-JsonItem -Text $text -Open $open -Close $close -Item "`"$PackageName`": `"link:$LinkPath`"" -Indent 4
+
+  # 2) dsh.profile.bundles
+  $bMatch = [regex]::Match($text, '"bundles"\s*:\s*\[')
+  if (-not $bMatch.Success) {
+    $profileMatch = [regex]::Match($text, '"profile"\s*:\s*\{')
+    if (-not $profileMatch.Success) { Fail 'manifest has no dsh.profile block' }
+    $pOpen = $text.IndexOf('{', $profileMatch.Index)
+    $pClose = Find-BlockEnd -Text $text -OpenIndex $pOpen -Open '{' -Close '}'
+    if ($pClose -lt 0) { Fail 'unbalanced braces in dsh.profile' }
+    $block = ",`n      `"bundles`": [`n        `"$PackageName`"`n      ]"
+    $text = $text.Substring(0, $pClose) + $block + $text.Substring($pClose)
+  } else {
+    $bOpen = $text.IndexOf('[', $bMatch.Index)
+    $bClose = Find-BlockEnd -Text $text -OpenIndex $bOpen -Open '[' -Close ']'
+    if ($bClose -lt 0) { Fail 'unbalanced brackets in bundles' }
+    $text = Insert-JsonItem -Text $text -Open $bOpen -Close $bClose -Item "`"$PackageName`"" -Indent 8
+  }
+
+  # 3) validate
+  try { $null = $text | ConvertFrom-Json } catch {
+    Fail ("generated manifest is not valid JSON, nothing written (original untouched): " + $_.Exception.Message)
+  }
+
+  if ($text -eq $original) { return $false }
+
+  if (-not $Apply) {
+    Say-Info "would add $PackageName (pass -Apply to write)"
+    return $false
+  }
+
+  $backup = "$ManifestPath.bak-ai4s-stack"
+  [IO.File]::WriteAllText($backup, $original, (New-Object Text.UTF8Encoding($false)))
+  [IO.File]::WriteAllText($ManifestPath, $text, (New-Object Text.UTF8Encoding($false)))
+  Say-Ok "added $PackageName (backup: $(Split-Path -Leaf $backup))"
+  return $true
+}
+
+# ---------------------------------------------------------------- main
 $dshHome = Get-DshHome
 $profiles = Get-Profiles
 
 Write-Host ''
-Write-Host '  dsh-ai4s-stack  一键安装' -ForegroundColor White
+Write-Host '  dsh-ai4s-stack  installer' -ForegroundColor White
 Write-Host '  ---------------------------------------------' -ForegroundColor DarkGray
-Say-Info "DSH_HOME : $dshHome"
-Say-Info "现有 profile : $(if ($profiles.Count) { $profiles -join ', ' } else { '(无)' })"
+Say-Info "DSH_HOME  : $dshHome"
+Say-Info "profiles  : $(if ($profiles.Count) { $profiles -join ', ' } else { '(none)' })"
 
 $script:DshCliPath = Resolve-DshCli
-if ($script:DshCliPath) { Say-Info "dsh CLI  : $script:DshCliPath" } else { Say-Warn 'dsh CLI  : 未找到' }
+if ($script:DshCliPath) { Say-Info "dsh CLI   : $script:DshCliPath" } else { Say-Warn 'dsh CLI   : not found' }
 
 $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-if ($nodeCmd) { Say-Info "node     : $($nodeCmd.Source) ($(& node -v))" } else { Say-Warn 'node     : 未找到' }
+if ($nodeCmd) { Say-Info "node      : $($nodeCmd.Source) ($(& node -v))" } else { Say-Warn 'node      : not found' }
 
 $pnpmPath = Get-Command pnpm -ErrorAction SilentlyContinue
-if ($pnpmPath) { Say-Info "pnpm     : $($pnpmPath.Source)" } else { Say-Warn 'pnpm     : 未找到（安装时会自动装）' }
+if ($pnpmPath) { Say-Info "pnpm      : $($pnpmPath.Source)" } else { Say-Warn 'pnpm      : not found (will be installed)' }
 
 if ($Check) {
-  Say-Step '只检查，不安装（-Check）'
-  if ($script:DshCliPath) { Say-Ok '可以安装' } else { Say-Warn '未找到 dsh CLI，请用 -DshBin 指定 bin.js 路径' }
+  Say-Step 'check only (-Check)'
+  if ($script:DshCliPath) { Say-Ok 'ready to install' } else { Say-Warn 'dsh CLI not found; pass -DshBin' }
   exit 0
 }
 
-if (-not $nodeCmd) { Fail '未找到 node。请先安装 Node.js 20+（https://nodejs.org）。' }
+if (-not $nodeCmd) { Fail 'node not found. Install Node.js 20+ first (https://nodejs.org).' }
 
 $resolvedProfile = Resolve-Profile -Requested $Profile -Available $profiles
-Say-Info "目标 profile : $resolvedProfile"
+Say-Info "target profile : $resolvedProfile"
 
 $selected = @($With | ForEach-Object { $_.Split(',') } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknown = @($selected | Where-Object { -not $script:PackageMap.Contains($_) })
-if ($unknown.Count) { Fail ("-With 只接受 " + ($script:PackageMap.Keys -join ' / ') + "，收到: " + ($unknown -join ', ')) }
-if (-not $selected.Count) { Fail '-With 为空，没有要安装的插件。' }
+if ($unknown.Count) { Fail ("-With accepts " + ($script:PackageMap.Keys -join ' / ') + ", got: " + ($unknown -join ', ')) }
+if (-not $selected.Count) { Fail '-With is empty, nothing to install.' }
 
-# ---- 卸载
+# ---- uninstall
 if ($Uninstall) {
-  if (-not $script:DshCliPath) { Fail '卸载需要 dsh CLI。请用 -DshBin 指定。' }
-  Say-Step "从 profile ""$resolvedProfile"" 卸载"
   $names = @($selected | ForEach-Object { $script:PackageMap[$_].Name })
+  if ($Manual -or $resolvedProfile -eq 'desktop') {
+    Say-Step "uninstall from profile ""$resolvedProfile"" (manual)"
+    $mf = Join-Path (Join-Path $dshHome "profiles\$resolvedProfile") 'package.json'
+    Say-Info "edit $mf and remove these lines:"
+    foreach ($n in $names) { Say-Info "  $n" }
+    exit 0
+  }
+  if (-not $script:DshCliPath) { Fail 'uninstall needs the dsh CLI; pass -DshBin.' }
+  Say-Step "uninstall from profile ""$resolvedProfile"""
   Invoke-Dsh plugin --profile $resolvedProfile remove @names
-  if ($LASTEXITCODE -ne 0) { Fail '卸载失败，见上方输出。' }
-  Say-Ok "已卸载: $($names -join ', ')"
-  Write-Host "`n重启 DSH 后生效。" -ForegroundColor Yellow
+  if ($LASTEXITCODE -ne 0) { Fail 'uninstall failed, see output above.' }
+  Say-Ok "removed: $($names -join ', ')"
+  Write-Host "`nRestart DSH to apply." -ForegroundColor Yellow
   exit 0
 }
 
-if (-not $script:DshCliPath) {
+$useManual = $Manual -or ($resolvedProfile -eq 'desktop')
+
+if (-not $useManual -and -not $script:DshCliPath) {
   Fail @"
-未找到 dsh CLI。三种做法任选其一：
-  1) 把 DSH 的 bin.js 路径传给脚本:  -DshBin "D:\DSH 科研站\resources\app\dsh\node_modules\@deepseek-ai\dsh\lib\bin.js"
-  2) 设置环境变量 DSH_APP_DIR 指向 resources\app\dsh 目录
-  3) 用桌面端「设置 → 插件」安装
+dsh CLI not found. Pick one:
+  1) pass the path:  -DshBin "D:\DSH\resources\app\dsh\node_modules\@deepseek-ai\dsh\lib\bin.js"
+  2) set DSH_APP_DIR to the resources\app\dsh directory
+  3) install from the desktop app GUI (Settings -> Plugins)
 "@
 }
 
 $null = Ensure-Pnpm
-Say-Ok 'pnpm 就绪'
+Say-Ok 'pnpm ready'
 
 $root = Resolve-StackRoot
-
-Say-Step "安装到 profile ""$resolvedProfile"""
 $installed = @()
-foreach ($key in $selected) {
-  $meta = $script:PackageMap[$key]
-  $dir = Join-Path $root ($meta.Dir -replace '/', '\')
-  if (-not (Test-Path -LiteralPath (Join-Path $dir 'package.json'))) { Fail "源码缺包: $dir" }
-  Say-Info "安装 $($meta.Label)  ($($meta.Name))"
-  Invoke-Dsh plugin --profile $resolvedProfile add $dir
-  if ($LASTEXITCODE -ne 0) { Fail "安装 $($meta.Name) 失败，见上方输出。" }
-  $installed += $meta.Name
-}
-Say-Ok "已安装: $($installed -join ', ')"
 
-# ---- 校验
-Say-Step '校验 profile 挂载'
+if ($useManual) {
+  Say-Step "manifest patch mode: profile ""$resolvedProfile"""
+  if (-not $Apply) { Say-Warn 'no -Apply given, preview only (nothing written).' }
+  $manifestPath = Join-Path (Join-Path $dshHome "profiles\$resolvedProfile") 'package.json'
+  if (-not (Test-Path -LiteralPath $manifestPath)) {
+    Fail "profile directory missing: $manifestPath`nLaunch the desktop app once with this profile, or use -Profile web."
+  }
+  foreach ($key in $selected) {
+    $meta = $script:PackageMap[$key]
+    $dir = Join-Path $root ($meta.Dir -replace '/', '\')
+    if (-not (Test-Path -LiteralPath (Join-Path $dir 'package.json'))) { Fail "missing package sources: $dir" }
+    $link = ($dir -replace '\\', '/')
+    Say-Info "$($meta.Label)  ->  link:$link"
+    $null = Add-DesktopEntry -ManifestPath $manifestPath -PackageName $meta.Name -LinkPath $link
+    $installed += $meta.Name
+  }
+  if ($Apply) {
+    Say-Ok "profile manifest updated: $manifestPath"
+    Write-Host ''
+    Write-Host '  Restart the DSH desktop app so pnpm materializes the links,' -ForegroundColor Yellow
+    Write-Host "  or run:  cd `"$(Split-Path -Parent $manifestPath)`" ; pnpm install" -ForegroundColor Yellow
+  } else {
+    Say-Warn 'preview finished. Re-run with -Apply to write.'
+  }
+} else {
+  Say-Step "install into profile ""$resolvedProfile"""
+  foreach ($key in $selected) {
+    $meta = $script:PackageMap[$key]
+    $dir = Join-Path $root ($meta.Dir -replace '/', '\')
+    if (-not (Test-Path -LiteralPath (Join-Path $dir 'package.json'))) { Fail "missing package sources: $dir" }
+    Say-Info "installing $($meta.Label)  ($($meta.Name))"
+    Invoke-Dsh plugin --profile $resolvedProfile add $dir
+    if ($LASTEXITCODE -ne 0) { Fail "installing $($meta.Name) failed, see output above." }
+    $installed += $meta.Name
+  }
+  Say-Ok "installed: $($installed -join ', ')"
+}
+
+# ---- verify
+Say-Step 'verify profile mounts'
 $manifestPath = Join-Path (Join-Path $dshHome "profiles\$resolvedProfile") 'package.json'
 if (Test-Path -LiteralPath $manifestPath) {
   $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
   $bundles = @($manifest.dsh.profile.bundles)
   foreach ($name in $installed) {
-    if ($bundles -contains $name) { Say-Ok "bundles 含 $name" }
-    else { Say-Warn "bundles 未含 $name —— 请检查 $manifestPath" }
+    if ($bundles -contains $name) { Say-Ok "bundles contains $name" }
+    else { Say-Warn "bundles misses $name - check $manifestPath" }
   }
 }
 
-# ---- 模式设置
+# ---- mode preference
 $setMode = $root + '\packages\dsh-ai4s-composer\scripts\set-mode.mjs'
 if (($Mode -or $DelegateModel -or $ClusterModel) -and (Test-Path -LiteralPath $setMode)) {
-  Say-Step '写入 AI4S 模式偏好'
+  Say-Step 'write AI4S mode preference'
   $modeArgs = @($setMode)
   if ($Mode) { $modeArgs += @('--mode', $Mode) }
   if ($DelegateModel) { $modeArgs += @('--delegate', $DelegateModel) }
   if ($ClusterModel) { $modeArgs += @('--cluster', $ClusterModel) }
   & node @modeArgs
-  if ($LASTEXITCODE -ne 0) { Say-Warn '模式写入失败，可稍后手动运行 set-mode.mjs' }
+  if ($LASTEXITCODE -ne 0) { Say-Warn 'mode write failed; run set-mode.mjs manually later.' }
 }
 
 Write-Host ''
 Write-Host '  ---------------------------------------------' -ForegroundColor DarkGray
-Write-Host '  安装完成。' -ForegroundColor Green
+Write-Host '  done.' -ForegroundColor Green
 Write-Host ''
-Write-Host '  下一步：' -ForegroundColor White
-Write-Host "    1) 重启 DSH：  dsh $resolvedProfile"
-Write-Host '    2) 侧栏会出现「技能 / MCP」面板'
-Write-Host '    3) AI4S 模式切换：'
+Write-Host '  next:'
+Write-Host "    1) restart DSH:  dsh $resolvedProfile"
+Write-Host '    2) the sidebar shows the Skills / MCP panel'
+Write-Host '    3) switch AI4S mode:'
 Write-Host "         node `"$setMode`" --show"
 Write-Host "         node `"$setMode`" --mode cluster --cluster <provider/model>"
 Write-Host ''
-Write-Host '  卸载：' -ForegroundColor White
+Write-Host '  uninstall:'
 Write-Host "     .\install.ps1 -Uninstall -Profile $resolvedProfile"
 Write-Host ''
-Write-Host "  源码目录（保留它，profile 以 link: 方式引用）：$root" -ForegroundColor DarkGray
+Write-Host "  sources (keep them: the profile references them via link:): $root" -ForegroundColor DarkGray
 Write-Host ''

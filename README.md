@@ -62,6 +62,44 @@ curl -fsSL https://raw.githubusercontent.com/Fishquito7/dsh-ai4s-stack/main/inst
 
 ---
 
+### 走代理 / 离线
+
+安装器下载源码走 `Invoke-WebRequest`（PowerShell）或 `curl`，两者都会读系统代理。**git 需要单独配**：
+
+```powershell
+git config --global http.https://github.com.proxy http://127.0.0.1:7897
+```
+
+完全离线就用已 clone 的目录：`.\install.ps1 -Source . -Profile web`。
+
+---
+
+## 桌面端（desktop profile）
+
+`dsh plugin --profile desktop` 会被 CLI 直接拒绝（Electron 独占 profile），所以桌面端有两条路：
+
+**A. 图形界面**：DSH 桌面端 → 设置 → 插件 → 安装。
+
+**B. 清单补丁模式**（安装器自带，会先备份再校验 JSON，失败不写盘）：
+
+```powershell
+# 先预览会改什么
+.\install.ps1 -Profile desktop -Manual
+
+# 确认无误后写入
+.\install.ps1 -Profile desktop -Manual -Apply
+```
+
+它只做两件事：在 profile 的 `dependencies` 里加 `"<包名>": "link:<源码目录>"`，在 `dsh.profile.bundles` 末尾追加包名。其余配置一个字节都不动，备份在 `package.json.bak-ai4s-stack`。
+
+写完重启桌面端（启动时会跑 pnpm 同步 link），或手动：
+
+```powershell
+cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
+```
+
+---
+
 ## 安装器做了什么
 
 1. **探测环境**：node、pnpm、`dsh` CLI、`$DSH_HOME/profiles/*`。
