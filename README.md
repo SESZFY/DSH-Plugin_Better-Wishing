@@ -9,7 +9,8 @@
 | 插件 | 作用 | 形态 |
 |---|---|---|
 | **`dsh-skill-mcp-panel`** | 技能 + MCP 管理面板：web 侧栏管理 skills / MCP servers / 技能分组，含统一 CLI `dsh-panel` | Host + Client（web） |
-| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：`quick` / `solo` / `delegate` / `cluster` 四种编排，自动派发只读子代理并把结论回灌主代理 | 纯 Host |
+| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：`quick` / `solo` / `delegate` / `cluster` 四种编排，自动派发只读子代理并把结论回灌主代理；附带 `read_document` 文档读取工具 | 纯 Host |
+| **`dsh-research-runner`** | 图表复现：`/research start` / `status` / `pause` / `resume` 命令 + `research_run` 工具，按检查点重跑公开论文图 | Host（`commands` + `tools`） |
 
 前者管「装什么能力」，后者管「怎么自动干活」。两个都能独立安装，一起装则是完整的科研自动化栈。
 
@@ -113,6 +114,7 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
    ```bash
    dsh plugin --profile <name> add <源码目录>/packages/dsh-skill-mcp-panel
    dsh plugin --profile <name> add <源码目录>/packages/dsh-ai4s-composer
+   dsh plugin --profile <name> add <源码目录>/packages/dsh-research-runner
    ```
    `dependencies` 与 `dsh.profile.bundles` 由 DSH 自己的 plugin-manager 维护，脚本不手改任何 profile 文件。
 5. **校验**：回读 profile 的 `package.json`，确认两个包都进了 `dsh.profile.bundles`。
@@ -126,7 +128,7 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
 | `-Mode` | `--mode` | `quick` / `solo` / `delegate` / `cluster` |
 | `-DelegateModel` | `--delegate` | 主从模式子代理模型，`provider/model` |
 | `-ClusterModel` | `--cluster` | 集群模式子代理模型，`provider/model` |
-| `-With` | `--with` | `mcp-panel,ai4s`（默认两个都装） |
+| `-With` | `--with` | `mcp-panel,ai4s,research`（默认三个都装） |
 | `-Ref` | `--ref` | 源码分支/标签，默认 `main` |
 | `-Source` | `--source` | 用本地目录安装，不下载 |
 | `-StageDir` | `--stage` | 源码存放目录 |
@@ -146,6 +148,7 @@ dsh plugin --profile web add dsh-skill-mcp-panel
 git clone https://github.com/SESZFY/dsh-ai4s-stack.git
 dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-skill-mcp-panel
 dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-ai4s-composer
+dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-research-runner
 ```
 
 > `dsh plugin add` 支持四种 spec：registry 包名、git 地址、tarball、**绝对/相对路径**。
@@ -193,24 +196,68 @@ node packages/dsh-ai4s-composer/scripts/set-mode.mjs --reset
 
 ---
 
+### 文档读取
+
+composer 同时注册了 `read_document` 工具：只读提取 PDF / Word（`.docx` / `.doc`）/ Excel（`.xlsx` / `.xls`），PDF 按页读并识别扫描页。
+它自己维护一个 Python venv（`document-runtime/`，依赖见 `document-requirements.txt`），首次调用时按需创建，**不进版本库**。
+
+---
+
+## 图表复现（`/research`）
+
+`dsh-research-runner` 注册一条命令加一个工具，把公开论文的图按检查点重跑：
+
+| 命令 | 作用 |
+|---|---|
+| `/research start` | 新建一次复现（`--prepare-only` 只准备输入，不跑分析） |
+| `/research status [ID]` | 看进度：三阶段里提交到哪一步、产物在哪 |
+| `/research list` | 列出当前会话的全部任务 |
+| `/research pause [ID]` / `/research resume [ID]` | 暂停 / 从检查点继续 |
+
+模型侧等价工具：`research_run`，参数 `{ "action": "start|status|list|pause|resume", "id": "可选" }`。
+
+任务目录固定三段，每段结束写 `checkpoint.json`（逐文件 sha256）；`resume` 先校验哈希，对不上就报「检查点损坏」，不拿被改过的中间产物继续算：
+
+```
+<任务目录>/
+├── inputs/      Er-diamond-EOS-data.json · reproduce.py · source.json · LICENSE-upstream.txt
+├── analysis/    figure.png · curves.csv · metrics.json · execution.log
+└── review/      report.md
+```
+
+内置目标：**Bosoni et al., Nature Reviews Physics 6, 45–58 (2024), Fig. 3**。数据与上游脚本来自 [aiidateam/acwf-verification-scripts](https://github.com/aiidateam/acwf-verification-scripts)（MIT，commit `fdb6adf`），原始归档 Materials Cloud `yf0rj-w3r97`，数据 sha256 记在 `source.json` 里。
+
+运行前置：**Node ≥ 22**（用内置 `node:sqlite`）、Python + `numpy` / `scipy` / `matplotlib`。纯 CPU、无网络。
+
+---
+
 ## 仓库结构
 
 ```
 dsh-ai4s-stack/
-├── install.ps1                  一键安装（Windows）
-├── install.sh                   一键安装（macOS/Linux/WSL/Git Bash）
+├── install.ps1                     一键安装（Windows）
+├── install.sh                      一键安装（macOS/Linux/WSL/Git Bash）
+├── docs/index.html                 Pages 站点
 ├── packages/
-│   ├── dsh-skill-mcp-panel/     技能 + MCP 面板（v2.3.16）
-│   │   ├── src/ lib/ docs/      TypeScript 源码与预构建产物
+│   ├── dsh-skill-mcp-panel/        技能 + MCP 面板（v2.3.16）
+│   │   ├── src/ lib/ docs/         TypeScript 源码与预构建产物
 │   │   └── cordis.patch.yml
-│   └── dsh-ai4s-composer/       全自动 AI4S 模式（v1.0.0）
-│       ├── index.js             435 行纯 Host 插件
-│       ├── scripts/set-mode.mjs 无 GUI 改模式
+│   ├── dsh-ai4s-composer/          全自动 AI4S 模式（v1.1.0）
+│   │   ├── index.js                编排：pre-step 钩子 / cluster_delegate / systemPrompt 回灌
+│   │   ├── document-reader.js      read_document 工具（PDF / docx / xlsx）
+│   │   ├── document_reader.py      PyMuPDF + python-docx + openpyxl
+│   │   ├── scripts/set-mode.mjs    无 GUI 改模式
+│   │   └── cordis.patch.yml
+│   └── dsh-research-runner/        图表复现（v1.0.0）
+│       ├── index.mjs               /research 命令 + research_run 工具
+│       ├── runner.mjs              三阶段调度 · 检查点 · node:sqlite 状态
+│       ├── reproduce.py            Bosoni Fig.3 复现与误差计算
+│       ├── source.json             论文 DOI / 归档 / 上游 commit / 数据 sha256
 │       └── cordis.patch.yml
 └── LICENSE
 ```
 
-两个包都是标准 DSH bundle：`package.json` 里带 `dsh.bundle.patch`，被 `dsh plugin add` 装进 profile 后自动追加到 `dsh.profile.bundles` 并套用 patch 层，**不需要手改 `cordis.patch.yml`**。
+三个包都是标准 DSH bundle：`package.json` 里带 `dsh.bundle.patch`，被 `dsh plugin add` 装进 profile 后自动追加到 `dsh.profile.bundles` 并套用 patch 层，**不需要手改 `cordis.patch.yml`**。
 
 ---
 
@@ -230,7 +277,7 @@ dsh-ai4s-stack/
 
 ## 维护者：发布到 GitHub
 
-本仓库已 `git init` + 提交 + 打 `v1.0.0` 标签，只差推送。一条命令完成「建仓 + 推 main + 推 tags」：
+仓库已上线：<https://github.com/SESZFY/dsh-ai4s-stack>。日常更新直接 `git push`（凭据在 Git Credential Manager 里）。
 
 ```powershell
 $env:GITHUB_TOKEN = "ghp_xxx"; .\push.ps1          # Windows

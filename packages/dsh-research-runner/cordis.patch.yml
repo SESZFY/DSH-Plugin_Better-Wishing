@@ -1,0 +1,10 @@
+# dsh-research-runner bundle patch.
+# Mounted as a normal bundle: `dsh plugin --profile <name> add <dir>` appends it
+# to dsh.profile.bundles and applies this layer, so no manual patch editing.
+#
+# Note: the plugin injects the `commands` and `tools` services; both are part of
+# the DSH base layer, so no extra bundle ordering is required.
+- insert:
+    - id: dsh-research-runner
+      name: dsh-research-runner
+      config: {}

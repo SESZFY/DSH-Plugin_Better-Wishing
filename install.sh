@@ -8,6 +8,7 @@ set -euo pipefail
 
 MCP_PANEL="dsh-skill-mcp-panel"
 AI4S="dsh-ai4s-composer"
+RESEARCH="dsh-research-runner"
 REPO_URL="https://github.com/SESZFY/dsh-ai4s-stack"
 REF="main"
 PROFILE=""
@@ -17,7 +18,7 @@ CLUSTER_MODEL=""
 SOURCE=""
 STAGE_DIR=""
 DSH_BIN="${DSH_BIN:-}"
-WITH="mcp-panel,ai4s"
+WITH="mcp-panel,ai4s,research"
 UNINSTALL=0
 NO_FETCH=0
 CHECK=0
@@ -37,7 +38,7 @@ usage() {
   --mode <m>              quick | solo | delegate | cluster
   --delegate <p/m>        主从模式子代理模型（provider/model）
   --cluster <p/m>         集群模式子代理模型（provider/model）
-  --with <list>           逗号分隔: mcp-panel,ai4s（默认两个都装）
+  --with <list>           逗号分隔: mcp-panel,ai4s,research（默认三个都装）
   --ref <branch|tag>      源码版本，默认 main
   --source <dir>          用本地目录安装（不下载）
   --stage <dir>           源码存放目录（默认 ~/.local/share/dsh-ai4s-stack/<ref>）
@@ -75,18 +76,21 @@ pkg_dir() {
   case "$1" in
     mcp-panel) printf 'packages/dsh-skill-mcp-panel' ;;
     ai4s)      printf 'packages/dsh-ai4s-composer' ;;
+    research)  printf 'packages/dsh-research-runner' ;;
   esac
 }
 pkg_name() {
   case "$1" in
     mcp-panel) printf '%s' "$MCP_PANEL" ;;
     ai4s)      printf '%s' "$AI4S" ;;
+    research)  printf '%s' "$RESEARCH" ;;
   esac
 }
 pkg_label() {
   case "$1" in
     mcp-panel) printf '技能 + MCP 面板' ;;
     ai4s)      printf '全自动 AI4S 模式' ;;
+    research)  printf '图表复现（/research）' ;;
   esac
 }
 
@@ -215,7 +219,7 @@ OLD_IFS="$IFS"; IFS=','
 for item in $WITH; do
   item=$(printf '%s' "$item" | tr -d '[:space:]')
   case "$item" in
-    mcp-panel|ai4s) SELECTED="$SELECTED $item" ;;
+    mcp-panel|ai4s|research) SELECTED="$SELECTED $item" ;;
     "") ;;
     *) IFS="$OLD_IFS"; die "--with 只接受 mcp-panel / ai4s，收到: $item" ;;
   esac

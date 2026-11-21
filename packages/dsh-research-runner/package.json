@@ -1,0 +1,56 @@
+{
+  "name": "dsh-research-runner",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "自动科研：注册 /research 命令与 research_run 工具，运行、暂停、恢复 Bosoni 等人论文图 3 的图表复现。",
+  "homepage": "https://github.com/SESZFY/dsh-ai4s-stack/tree/main/packages/dsh-research-runner#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SESZFY/dsh-ai4s-stack.git",
+    "directory": "packages/dsh-research-runner"
+  },
+  "bugs": {
+    "url": "https://github.com/SESZFY/dsh-ai4s-stack/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "reproducibility",
+    "figure-reproduction",
+    "ai4s"
+  ],
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0-0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "files": [
+    "index.mjs",
+    "runner.mjs",
+    "reproduce.py",
+    "source.json",
+    "Er-diamond-EOS-data.json",
+    "LICENSE-upstream.txt",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ]
+}

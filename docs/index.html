@@ -28,7 +28,8 @@
   h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
     margin:44px 0 14px;font-weight:600}
   h2:first-of-type{margin-top:0}
-  .cards{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+  .cards{display:grid;gap:14px;grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:980px){.cards{grid-template-columns:1fr 1fr}}
   @media(max-width:720px){.cards{grid-template-columns:1fr}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;transition:.18s}
   .card:hover{border-color:#2b3d4f;transform:translateY(-1px)}
@@ -66,17 +67,18 @@
 
 <header>
   <h1><code>dsh-ai4s-stack</code></h1>
-  <p class="lede">两个 <a href="https://github.com/SESZFY">DSH（DeepSeek Harness）</a> 插件打包在一起：一个管「装什么能力」，一个管「怎么自动干活」。一条命令装完。</p>
+  <p class="lede">三个 <a href="https://github.com/SESZFY">DSH（DeepSeek Harness）</a> 插件打包在一起：管「装什么能力」、管「怎么自动干活」、管「结果怎么复现」。一条命令装完。</p>
   <div class="badges">
     <span class="badge"><b>MIT</b></span>
     <span class="badge">panel <b>2.3.16</b></span>
-    <span class="badge">composer <b>1.0.0</b></span>
+    <span class="badge">composer <b>1.1.0</b></span>
+    <span class="badge">research <b>1.0.0</b></span>
     <span class="badge">Windows / macOS / Linux</span>
-    <span class="badge">零运行时依赖</span>
+    <span class="badge">panel 零依赖 · runner 需 Node ≥ 22</span>
   </div>
 </header>
 
-<h2>两个插件</h2>
+<h2>三个插件</h2>
 <div class="cards">
   <div class="card">
     <h3>技能 + MCP 面板</h3>
@@ -96,6 +98,17 @@
       <li><code>quick</code> / <code>solo</code> / <code>delegate</code> / <code>cluster</code></li>
       <li>子代理强制只读，执行动作回到主代理</li>
       <li>结论经 systemPrompt 回灌</li>
+      <li><code>read_document</code>：PDF / docx / xlsx</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>图表复现</h3>
+    <div class="pkg">dsh-research-runner</div>
+    <p><code>/research</code> 命令族：按检查点重跑公开论文图。</p>
+    <ul>
+      <li><code>start</code> / <code>status</code> / <code>list</code> / <code>pause</code> / <code>resume</code></li>
+      <li>三阶段 inputs → analysis → review</li>
+      <li>逐文件 sha256 检查点，改过就拒绝续跑</li>
     </ul>
   </div>
 </div>
@@ -141,15 +154,26 @@
   <tr><td><code>cluster</code></td><td>先规划拆分子任务，再并行开多个子代理，可中途追加</td></tr>
 </table>
 
+<h2>图表复现 <code>/research</code></h2>
+<table>
+  <tr><th>命令</th><th>作用</th></tr>
+  <tr><td><code>/research start</code></td><td>新建一次复现（<code>--prepare-only</code> 只准备输入）</td></tr>
+  <tr><td><code>/research status [ID]</code></td><td>看进度与产物位置</td></tr>
+  <tr><td><code>/research list</code></td><td>列出当前会话的全部任务</td></tr>
+  <tr><td><code>/research pause</code> / <code>resume</code></td><td>暂停 / 从检查点继续</td></tr>
+</table>
+<p class="note">任务目录三段 <code>inputs → analysis → review</code>，每段写 <code>checkpoint.json</code>（逐文件 sha256）；<code>resume</code> 先校验哈希，对不上就报「检查点损坏」。内置目标：Bosoni et al., Nat. Rev. Phys. 6, 45–58 (2024) Fig. 3。需要 Node ≥ 22 与 Python numpy/scipy/matplotlib。</p>
+
 <h2>仓库结构</h2>
 <p class="tree">dsh-ai4s-stack/
-├── install.ps1              <i># 一键安装（Windows）</i>
-├── install.sh               <i># 一键安装（macOS/Linux/WSL）</i>
-├── push.ps1 / push.sh       <i># 建仓 + 推 main + 推 tags</i>
-├── docs/index.html          <i># 本页</i>
+├── install.ps1                 <i># 一键安装（Windows）</i>
+├── install.sh                  <i># 一键安装（macOS/Linux/WSL）</i>
+├── push.ps1 / push.sh          <i># 建仓 + 推 main + 推 tags</i>
+├── docs/index.html             <i># 本页</i>
 └── packages/
-    ├── dsh-skill-mcp-panel/ <i># 技能 + MCP 面板</i>
-    └── dsh-ai4s-composer/   <i># 全自动 AI4S 模式</i></p>
+    ├── dsh-skill-mcp-panel/    <i># 技能 + MCP 面板</i>
+    ├── dsh-ai4s-composer/      <i># 全自动 AI4S 模式 + read_document</i>
+    └── dsh-research-runner/    <i># /research 图表复现</i></p>
 
 <footer>
   <a href="https://github.com/SESZFY/dsh-ai4s-stack">源码</a> ·

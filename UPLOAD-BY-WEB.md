@@ -48,7 +48,7 @@ GitHub 网页上传有两条硬限制，先看清楚：
 
 | 限制 | 影响 | 处理 |
 |---|---|---|
-| 单次 commit 最多 100 个文件 | 本仓 133 个文件，一次拖不完 | 分四批（见下表） |
+| 单次 commit 最多 100 个文件 | 本仓 146 个文件，一次拖不完 | 分五批（见下表） |
 | 拖拽会**跳过点开头**的文件/目录 | `.gitignore`、`.gitattributes`、`packages/dsh-skill-mcp-panel/.github/`、`packages/dsh-skill-mcp-panel/.gitignore` 会丢 | 可手动补，也可以不补——这些只影响开发，不影响 `dsh plugin add` 安装 |
 
 | 批次 | 拖什么 | 文件数 |
@@ -56,7 +56,8 @@ GitHub 网页上传有两条硬限制，先看清楚：
 | 1 | 根目录 8 个文件（`install.*`/`push.*`/`README.md`/`LICENSE`/`.gitattributes`/`.gitignore`）+ `docs/` + `profile/` | 11 |
 | 2 | `packages/dsh-skill-mcp-panel/` 下的 `lib/`、`src/`、`assets/`、`scripts/` 及该目录根上的 8 个文件 | 68 |
 | 3 | `packages/dsh-skill-mcp-panel/` 下的 `docs/`、`examples/`、`test/`、`.github/` | 45 |
-| 4 | `packages/dsh-ai4s-composer/` 整个目录 | 9 |
+| 4 | `packages/dsh-ai4s-composer/` 整个目录 | 12 |
+| 5 | `packages/dsh-research-runner/` 整个目录 | 10 |
 
 每批拖完点 **Commit changes**，再重新进仓库点 **Add file → Upload files** 传下一批。
 

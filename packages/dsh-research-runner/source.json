@@ -1,0 +1,9 @@
+{
+  "paper": "https://doi.org/10.1038/s42254-023-00655-3",
+  "archive": "https://archive.materialscloud.org/records/yf0rj-w3r97",
+  "figure": "Bosoni et al., Nature Reviews Physics 6, 45–58 (2024), Fig. 3",
+  "commit": "fdb6adf581b6393e749a8cf3d6379dc3d74984c3",
+  "data": "https://github.com/aiidateam/acwf-verification-scripts/blob/fdb6adf581b6393e749a8cf3d6379dc3d74984c3/acwf_paper_plots/plots/main/Er_diamond_EOS/Er-diamond-EOS-data.json",
+  "data_sha256": "58ade50c0e52e6029aa70364da00aad25806f12438d0fdc713705e12871bc60e",
+  "original_plot_script": "https://github.com/aiidateam/acwf-verification-scripts/blob/fdb6adf581b6393e749a8cf3d6379dc3d74984c3/acwf_paper_plots/plots/main/Er_diamond_EOS/plot_Er_diamond_EOS.py"
+}

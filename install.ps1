@@ -47,7 +47,7 @@ param(
   [string]$RepoUrl = 'https://github.com/SESZFY/dsh-ai4s-stack',
   [string]$StageDir,
   [string]$DshBin,
-  [string[]]$With = @('mcp-panel', 'ai4s'),
+  [string[]]$With = @('mcp-panel', 'ai4s', 'research'),
   [switch]$Uninstall,
   [switch]$NoFetch,
   [switch]$Check,
@@ -60,6 +60,7 @@ $ErrorActionPreference = 'Stop'
 $script:PackageMap = [ordered]@{
   'mcp-panel' = @{ Dir = 'packages/dsh-skill-mcp-panel'; Name = 'dsh-skill-mcp-panel'; Label = 'skills + MCP panel' }
   'ai4s'      = @{ Dir = 'packages/dsh-ai4s-composer';  Name = 'dsh-ai4s-composer';  Label = 'full-auto AI4S mode' }
+  'research'  = @{ Dir = 'packages/dsh-research-runner'; Name = 'dsh-research-runner'; Label = 'figure reproduction (/research)' }
 }
 
 # ---------------------------------------------------------------- output

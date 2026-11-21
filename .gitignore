@@ -18,5 +18,11 @@ Thumbs.db
 *.bak-*
 *.pre-undo-*.bak
 
+# 运行时产物：document-reader 自建的 Python venv（PyMuPDF/lxml 等，数万文件）
+document-runtime/
+**/document-runtime/
+**/__pycache__/
+*.pyc
+
 # 本地测试产物
 _selftest_home/

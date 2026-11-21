@@ -1,8 +1,8 @@
 {
   "name": "dsh-ai4s-composer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "description": "全自动 AI4S 模式：为 DSH 提供 quick / solo / delegate / cluster 四种编排模式，自动派发只读子代理并把结论回灌主代理。",
+  "description": "全自动 AI4S 模式：为 DSH 提供 quick / solo / delegate / cluster 四种编排模式，自动派发只读子代理并把结论回灌主代理；附带文档读取工具。",
   "homepage": "https://github.com/SESZFY/dsh-ai4s-stack/tree/main/packages/dsh-ai4s-composer#readme",
   "repository": {
     "type": "git",
@@ -49,6 +49,9 @@
   "license": "MIT",
   "files": [
     "index.js",
+    "document-reader.js",
+    "document_reader.py",
+    "document-requirements.txt",
     "cordis.patch.yml",
     "locale/zh.json",
     "locale/en.json",
