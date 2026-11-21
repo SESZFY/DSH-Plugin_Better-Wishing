@@ -210,39 +210,70 @@ function Resolve-StackRoot {
     "$RepoUrl/archive/refs/heads/$Ref.zip",
     "$RepoUrl/archive/refs/tags/$Ref.zip"
   )
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+
+  # Transport 1 + 2: zip over Invoke-WebRequest, then over curl.exe.
+  # Invoke-WebRequest honours the WinINET proxy, curl.exe does not - when the local
+  # proxy is broken for github (CONNECT accepted, TLS never answers) curl succeeds
+  # where IWR fails, so both are tried.
   $ok = $false
   foreach ($url in $urls) {
+    Say-Info "downloading $url"
     try {
-      Say-Info "downloading $url"
       Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -TimeoutSec 120
-      $ok = $true
-      break
+      $ok = $true; break
     } catch {
-      Say-Warn ("download failed: " + $_.Exception.Message)
+      Say-Warn ("Invoke-WebRequest failed: " + $_.Exception.Message)
+    }
+    if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+      & curl.exe -fsSL --retry 2 --retry-delay 2 --connect-timeout 20 --max-time 300 -o $zip $url 2>$null
+      if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $zip) -and (Get-Item $zip).Length -gt 1024) {
+        Say-Info 'downloaded via curl'
+        $ok = $true; break
+      }
+      Say-Warn 'curl download failed too'
     }
   }
-  if (-not $ok) {
-    Fail @"
-Source download failed. Options:
-  1) configure a proxy and retry. git needs its own proxy setting:
+
+  if ($ok) {
+    try { Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $tmp 'x') -Force }
+    catch { Fail ("unzip failed: " + $_.Exception.Message) }
+    $inner = Get-ChildItem -LiteralPath (Join-Path $tmp 'x') -Directory | Select-Object -First 1
+    if (-not $inner) { Fail 'downloaded archive has no top-level directory.' }
+    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+    Move-Item -LiteralPath $inner.FullName -Destination $target
+    Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    Say-Ok "sources staged at $target"
+    return $target
+  }
+
+  # Transport 3: git clone (git keeps its own proxy settings, so it can work when
+  # both zip transports fail, and vice versa).
+  if (Get-Command git -ErrorAction SilentlyContinue) {
+    Say-Info "archive download failed; trying git clone $RepoUrl"
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $cloneOut = & git clone --depth 1 --branch $Ref $RepoUrl $target 2>&1 | Out-String
+    $cloneCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+    if ($cloneCode -eq 0 -and (Test-Path -LiteralPath (Join-Path $target 'packages\dsh-ai4s-composer\package.json'))) {
+      Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+      Say-Ok "sources cloned to $target"
+      return $target
+    }
+    ($cloneOut -split "`n") | Where-Object { $_.Trim() } | Select-Object -First 3 | ForEach-Object { Say-Warn $_ }
+  }
+
+  Fail @"
+Source download failed on every transport (Invoke-WebRequest, curl, git clone).
+Options:
+  1) fix the proxy for github.com and retry. git needs its own setting:
      git config --global http.https://github.com.proxy http://127.0.0.1:7897
   2) clone manually and install from a local path:
      git clone $RepoUrl
      .\install.ps1 -Source .\dsh-ai4s-stack
+  3) point -StageDir at an already extracted copy and add -NoFetch.
 "@
-  }
-
-  try { Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $tmp 'x') -Force }
-  catch { Fail ("unzip failed: " + $_.Exception.Message) }
-  $inner = Get-ChildItem -LiteralPath (Join-Path $tmp 'x') -Directory | Select-Object -First 1
-  if (-not $inner) { Fail 'downloaded archive has no top-level directory.' }
-
-  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
-  if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
-  Move-Item -LiteralPath $inner.FullName -Destination $target
-  Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
-  Say-Ok "sources staged at $target"
-  return $target
 }
 
 # ---------------------------------------------------------------- desktop manifest patch
