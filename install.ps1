@@ -47,7 +47,6 @@ param(
   [string]$RepoUrl = 'https://github.com/SESZFY/DSH-Plugin_Better-Wishing',
   [string]$StageDir,
   [string]$DshBin,
-  [string]$ModelMenuRoot,
   [string[]]$With = @('mcp-panel', 'ai4s', 'research'),
   [switch]$Uninstall,
   [switch]$NoFetch,
@@ -487,15 +486,6 @@ if (Test-Path -LiteralPath $manifestPath) {
     if ($bundles -contains $name) { Say-Ok "bundles contains $name" }
     else { Say-Warn "bundles misses $name - check $manifestPath" }
   }
-}
-
-# ---- optional model-selection menu
-if ($ModelMenuRoot -and ($selected -contains 'ai4s')) {
-  Say-Step 'AI4S model menu'
-  $menuArgs = @((Join-Path $root 'packages/dsh-ai4s-composer/scripts/install-model-menu.mjs'), '--root', $ModelMenuRoot)
-  if ($useManual -and -not $Apply) { $menuArgs += '--check' }
-  & node @menuArgs
-  if ($LASTEXITCODE -ne 0) { Fail 'The local DSH model menu could not be patched.' }
 }
 
 # ---- explicit defaults for sessions without saved preferences

@@ -10,7 +10,7 @@
 | 插件 | 作用 | 形态 |
 |---|---|---|
 | **`dsh-skill-mcp-panel`** | 技能 + MCP 管理面板：web 侧栏管理 skills / MCP servers / 技能分组，含统一 CLI `dsh-panel` | Host + Client（web） |
-| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：四种会话编排模式，自动派发只读子代理，附带 `read_document` 和模型选择菜单补丁 | Host + 可选客户端补丁 |
+| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：四种会话编排模式，自动派发只读子代理，内置 `read_document` 和模型选择菜单 | Host + Client（web、桌面） |
 | **`dsh-research-runner`** | 图表复现：`/research start` / `status` / `pause` / `resume` 命令 + `research_run` 工具，按检查点重跑公开论文图 | Host（`commands` + `tools`） |
 
 前者管「装什么能力」，后者管「怎么自动干活」。两个都能独立安装，一起装则是完整的科研自动化栈。
@@ -64,7 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/ma
 ./install.sh --check
 ```
 
-装完重启 DSH 后，侧栏会多出「技能 / MCP」面板。AI4S 模型选择区包含「模式」「模型」「推理强度」。每个会话单独保存模式和子代理模型。可在安装时加 `-ModelMenuRoot "D:\DSH 科研站"`，也可单独[安装模型选择菜单](packages/dsh-ai4s-composer/README.md#安装模型选择菜单)。
+装完重启 DSH 后，侧栏会多出「技能 / MCP」面板。AI4S 插件自动加载「模式」「模型」「推理强度」菜单，每个会话单独保存模式和子代理模型。使用过旧版手动补丁的用户，可以按[升级说明](packages/dsh-ai4s-composer/README.md#模型选择菜单)恢复原始 DSH 组件。
 
 ---
 
@@ -127,7 +127,6 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
 |---|---|---|
 | `-Profile` | `--profile` | 目标 profile；省略时自动探测，优先 `web` |
 | `-Mode` | `--mode` | 未单独配置的会话所用的默认模式 |
-| `-ModelMenuRoot` | `--model-menu-root` | 可选，兼容的 DSH 安装目录，用于安装模型选择菜单 |
 | `-DelegateModel` | `--delegate` | 主从模式子代理模型，`provider/model` |
 | `-ClusterModel` | `--cluster` | 集群模式子代理模型，`provider/model` |
 | `-With` | `--with` | `mcp-panel,ai4s,research`（默认三个都装） |
@@ -273,7 +272,7 @@ dsh-ai4s-stack/
 | 找不到 dsh CLI | `-DshBin ".../node_modules/@deepseek-ai/dsh/lib/bin.js"`，或设 `DSH_APP_DIR`。 |
 | 装完侧栏没出现面板 | 重启 DSH；面板是 web 平台 client 插件，需要 web profile。 |
 | 删了源码目录后插件报错 | profile 用 `link:` 引用源码目录，**别删**；要移动就重跑安装器换路径。 |
-| 模式改了不生效 | 检查会话菜单补丁是否已加载。正在运行的轮次用原来的模式，下一轮读取当前会话的设置。 |
+| 模式改了不生效 | 确认 AI4S 插件已启用。正在运行的轮次用开始时的模式，下一轮读取当前会话的设置。 |
 
 ---
 

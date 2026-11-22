@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai4s-composer",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "description": "全自动 AI4S 模式：为 DSH 提供 quick / solo / delegate / cluster 四种编排模式，自动派发只读子代理并把结论回灌主代理；附带文档读取工具。",
   "homepage": "https://github.com/SESZFY/DSH-Plugin_Better-Wishing/tree/main/packages/dsh-ai4s-composer#readme",
@@ -23,17 +23,26 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
+    "./client": "./client.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
   "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-model-selection"
+      ],
+      "platform": "web"
+    },
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
   },
   "bin": {
-    "dsh-ai4s-mode": "scripts/set-mode.mjs",
-    "dsh-ai4s-menu": "scripts/install-model-menu.mjs"
+    "dsh-ai4s-mode": "scripts/set-mode.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -50,6 +59,7 @@
   "license": "MIT",
   "files": [
     "index.js",
+    "client.js",
     "document-reader.js",
     "document_reader.py",
     "document-requirements.txt",
@@ -58,9 +68,7 @@
     "locale/en.json",
     "icon.svg",
     "scripts/set-mode.mjs",
-    "scripts/install-model-menu.mjs",
-    "scripts/model-menu-edits.json",
-    "scripts/LICENSE.deepseek",
+    "LICENSE.deepseek",
     "README.md",
     "LICENSE"
   ]
