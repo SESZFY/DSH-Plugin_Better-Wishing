@@ -40,15 +40,14 @@ function modelRoute(value) {
   return { provider: value.provider, model: value.model };
 }
 
-function readPreferences(file, defaultModels = { delegate: null, cluster: null }) {
-  const defaults = { mode: 'solo', models: defaultModels };
+function readPreferences(file, defaults = { mode: 'solo', models: { delegate: null, cluster: null } }, modeKey = 'mode') {
   try {
     const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
     return {
-      mode: MODES.has(saved.mode) ? saved.mode : defaults.mode,
+      mode: MODES.has(saved[modeKey]) ? saved[modeKey] : defaults.mode,
       models: {
-        delegate: Object.hasOwn(saved.models ?? {}, 'delegate') ? storedRoute(saved.models.delegate) : defaultModels.delegate,
-        cluster: Object.hasOwn(saved.models ?? {}, 'cluster') ? storedRoute(saved.models.cluster) : defaultModels.cluster,
+        delegate: Object.hasOwn(saved.models ?? {}, 'delegate') ? storedRoute(saved.models.delegate) : defaults.models.delegate,
+        cluster: Object.hasOwn(saved.models ?? {}, 'cluster') ? storedRoute(saved.models.cluster) : defaults.models.cluster,
       },
     };
   } catch {
@@ -169,7 +168,10 @@ export function apply(ctx, config = {}) {
   const idleTimeoutMs = duration(config.workerIdleTimeoutMs, WORKER_IDLE_TIMEOUT_MS);
   const queueTimeoutMs = duration(config.workerQueueTimeoutMs, WORKER_QUEUE_TIMEOUT_MS);
   const dshHome = process.env.DSH_HOME || path.join(os.homedir(), '.dsh');
-  const defaultModels = readPreferences(path.join(dshHome, 'clawsgo-composer.json')).models;
+  // Old clients wrote the last conversation's selection to `mode`. Only an
+  // explicitly configured `defaultMode` should carry over to new conversations.
+  const defaultFile = path.join(dshHome, 'clawsgo-composer.json');
+  const readSessionPreferences = (file) => readPreferences(file, readPreferences(defaultFile, undefined, 'defaultMode'));
   const sessionDirectory = path.join(dshHome, 'clawsgo-composer-sessions');
   const pendingWrites = new Map();
   const activeWorkers = new Map();
@@ -186,7 +188,7 @@ export function apply(ctx, config = {}) {
 
   async function update(request, file, patch) {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('无效的模式设置。');
-    const preferences = readPreferences(file, defaultModels);
+    const preferences = readSessionPreferences(file);
     const next = { ...preferences, models: { ...preferences.models } };
     if (patch.mode !== undefined) {
       if (!MODES.has(patch.mode)) throw new Error('未知的模式。');
@@ -210,9 +212,9 @@ export function apply(ctx, config = {}) {
     requestBody: 'buffered',
     async fetch(request) {
       const sessionId = new URL(request.url).searchParams.get('sessionId');
-      if (!sessionId?.trim() || sessionId.length > 256) return json({ error: '需要有效的会话 ID。' }, 400);
+      if (!sessionId || sessionId.trim() !== sessionId || sessionId.length > 256) return json({ error: '需要有效的会话 ID。' }, 400);
       const file = sessionFile(sessionId);
-      if (request.method === 'GET') return json(readPreferences(file, defaultModels));
+      if (request.method === 'GET') return json(readSessionPreferences(file));
       if (request.headers.get('content-type')?.split(';')[0] !== 'application/json') return json({ error: '需要 JSON。' }, 415);
       try {
         const body = await request.text();
@@ -276,7 +278,7 @@ export function apply(ctx, config = {}) {
       return;
     }
     if (status !== 'running' || isChild(agent) || runningPreferences.has(agent)) return;
-    const preferences = readPreferences(sessionFile(agent.session.id), defaultModels);
+    const preferences = readSessionPreferences(sessionFile(agent.session.id));
     runningPreferences.set(agent, preferences);
     if (preferences.mode !== 'cluster') return;
     clusterTools.set(agent, agent.ctx.tools.register({
@@ -425,7 +427,7 @@ export function apply(ctx, config = {}) {
     if (decision.kind !== 'enter') return decision;
     if (reports.get(agent)?.turn === turn) return decision;
     reports.delete(agent);
-    const { mode, models } = runningPreferences.get(agent) ?? readPreferences(sessionFile(agent.session.id), defaultModels);
+    const { mode, models } = runningPreferences.get(agent) ?? readSessionPreferences(sessionFile(agent.session.id));
     if (!Object.hasOwn(WORKER_ROLES, mode)) return decision;
     const userMessages = messages.filter((message) => message.source.kind === 'user');
     if (!userMessages.length) return decision;

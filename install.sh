@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # dsh-ai4s-stack 一键安装器（macOS / Linux / WSL / Git Bash）
 #
-#   curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/main/install.sh | bash
 #   curl -fsSL .../install.sh | bash -s -- --profile web --mode cluster --cluster openrouter/deepseek-v3.2
 #
 set -euo pipefail
@@ -9,7 +9,7 @@ set -euo pipefail
 MCP_PANEL="dsh-skill-mcp-panel"
 AI4S="dsh-ai4s-composer"
 RESEARCH="dsh-research-runner"
-REPO_URL="https://github.com/SESZFY/dsh-ai4s-stack"
+REPO_URL="https://github.com/SESZFY/DSH-Plugin_Better-Wishing"
 REF="main"
 PROFILE=""
 MODE=""
@@ -18,6 +18,7 @@ CLUSTER_MODEL=""
 SOURCE=""
 STAGE_DIR=""
 DSH_BIN="${DSH_BIN:-}"
+MODEL_MENU_ROOT=""
 WITH="mcp-panel,ai4s,research"
 UNINSTALL=0
 NO_FETCH=0
@@ -43,6 +44,7 @@ usage() {
   --source <dir>          用本地目录安装（不下载）
   --stage <dir>           源码存放目录（默认 ~/.local/share/dsh-ai4s-stack/<ref>）
   --dsh-bin <path>        dsh CLI 的 bin.js 路径
+  --model-menu-root <dir> 安装会话独立的模型选择菜单（支持的 DSH 安装目录）
   --uninstall             卸载
   --no-fetch              不下载，沿用 --stage 里已有源码
   --check                 只探测环境
@@ -61,6 +63,7 @@ while [ $# -gt 0 ]; do
     --source)   SOURCE="${2:?}"; shift 2 ;;
     --stage)    STAGE_DIR="${2:?}"; shift 2 ;;
     --dsh-bin)  DSH_BIN="${2:?}"; shift 2 ;;
+    --model-menu-root) MODEL_MENU_ROOT="${2:?}"; shift 2 ;;
     --uninstall) UNINSTALL=1; shift ;;
     --no-fetch) NO_FETCH=1; shift ;;
     --check)    CHECK=1; shift ;;
@@ -263,6 +266,12 @@ if [ -f "$manifest" ]; then
   for n in $INSTALLED; do
     if grep -q "\"$n\"" "$manifest"; then ok "bundles 含 $n"; else warn "bundles 未含 $n —— 检查 $manifest"; fi
   done
+fi
+
+if [ -n "$MODEL_MENU_ROOT" ]; then
+  case " $SELECTED " in
+    *" ai4s "*) node "$ROOT/packages/dsh-ai4s-composer/scripts/install-model-menu.mjs" --root "$MODEL_MENU_ROOT" ;;
+  esac
 fi
 
 SET_MODE="$ROOT/packages/dsh-ai4s-composer/scripts/set-mode.mjs"

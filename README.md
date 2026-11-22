@@ -10,7 +10,7 @@
 | 插件 | 作用 | 形态 |
 |---|---|---|
 | **`dsh-skill-mcp-panel`** | 技能 + MCP 管理面板：web 侧栏管理 skills / MCP servers / 技能分组，含统一 CLI `dsh-panel` | Host + Client（web） |
-| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：`quick` / `solo` / `delegate` / `cluster` 四种编排，自动派发只读子代理并把结论回灌主代理；附带 `read_document` 文档读取工具 | 纯 Host |
+| **`dsh-ai4s-composer`** | 全自动 AI4S 模式：四种会话编排模式，自动派发只读子代理，附带 `read_document` 和模型选择菜单补丁 | Host + 可选客户端补丁 |
 | **`dsh-research-runner`** | 图表复现：`/research start` / `status` / `pause` / `resume` 命令 + `research_run` 工具，按检查点重跑公开论文图 | Host（`commands` + `tools`） |
 
 前者管「装什么能力」，后者管「怎么自动干活」。两个都能独立安装，一起装则是完整的科研自动化栈。
@@ -22,25 +22,25 @@
 ### Windows（PowerShell）
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1)))
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/main/install.ps1)))
 ```
 
-带参数（指定 profile、直接切集群模式并指定子代理模型）：
+带参数（指定 profile，并为未单独配置的会话设置默认模式和子代理模型）：
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.ps1))) `
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/main/install.ps1))) `
     -Profile web -Mode cluster -ClusterModel "openrouter/deepseek-v3.2"
 ```
 
 ### macOS / Linux / WSL / Git Bash
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/main/install.sh | bash
 ```
 
 ```bash
 # 带参数
-curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/SESZFY/DSH-Plugin_Better-Wishing/main/install.sh \
   | bash -s -- --profile web --mode cluster --cluster openrouter/deepseek-v3.2
 ```
 
@@ -64,7 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/SESZFY/dsh-ai4s-stack/main/install.
 ./install.sh --check
 ```
 
-装完重启 DSH（`dsh web`），侧栏会多出「技能 / MCP」面板，模式菜单里出现「全自动AI4S模式」。
+装完重启 DSH 后，侧栏会多出「技能 / MCP」面板。AI4S 模型选择区包含「模式」「模型」「推理强度」。每个会话单独保存模式和子代理模型。可在安装时加 `-ModelMenuRoot "D:\DSH 科研站"`，也可单独[安装模型选择菜单](packages/dsh-ai4s-composer/README.md#安装模型选择菜单)。
 
 ---
 
@@ -126,7 +126,8 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
 | PowerShell | bash | 说明 |
 |---|---|---|
 | `-Profile` | `--profile` | 目标 profile；省略时自动探测，优先 `web` |
-| `-Mode` | `--mode` | `quick` / `solo` / `delegate` / `cluster` |
+| `-Mode` | `--mode` | 未单独配置的会话所用的默认模式 |
+| `-ModelMenuRoot` | `--model-menu-root` | 可选，兼容的 DSH 安装目录，用于安装模型选择菜单 |
 | `-DelegateModel` | `--delegate` | 主从模式子代理模型，`provider/model` |
 | `-ClusterModel` | `--cluster` | 集群模式子代理模型，`provider/model` |
 | `-With` | `--with` | `mcp-panel,ai4s,research`（默认三个都装） |
@@ -146,10 +147,10 @@ cd "$env:USERPROFILE\.dsh\profiles\desktop"; pnpm install
 dsh plugin --profile web add dsh-skill-mcp-panel
 
 # 从 GitHub 装（源码目录形式，两个包都可以）
-git clone https://github.com/SESZFY/dsh-ai4s-stack.git
-dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-skill-mcp-panel
-dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-ai4s-composer
-dsh plugin --profile web add ./dsh-ai4s-stack/packages/dsh-research-runner
+git clone https://github.com/SESZFY/DSH-Plugin_Better-Wishing.git
+dsh plugin --profile web add ./DSH-Plugin_Better-Wishing/packages/dsh-skill-mcp-panel
+dsh plugin --profile web add ./DSH-Plugin_Better-Wishing/packages/dsh-ai4s-composer
+dsh plugin --profile web add ./DSH-Plugin_Better-Wishing/packages/dsh-research-runner
 ```
 
 > `dsh plugin add` 支持四种 spec：registry 包名、git 地址、tarball、**绝对/相对路径**。
@@ -272,13 +273,13 @@ dsh-ai4s-stack/
 | 找不到 dsh CLI | `-DshBin ".../node_modules/@deepseek-ai/dsh/lib/bin.js"`，或设 `DSH_APP_DIR`。 |
 | 装完侧栏没出现面板 | 重启 DSH；面板是 web 平台 client 插件，需要 web profile。 |
 | 删了源码目录后插件报错 | profile 用 `link:` 引用源码目录，**别删**；要移动就重跑安装器换路径。 |
-| 模式改了不生效 | 重启 DSH；偏好是挂载时读盘的。 |
+| 模式改了不生效 | 检查会话菜单补丁是否已加载。正在运行的轮次用原来的模式，下一轮读取当前会话的设置。 |
 
 ---
 
 ## 维护者：发布到 GitHub
 
-仓库已上线：<https://github.com/SESZFY/dsh-ai4s-stack>。日常更新直接 `git push`（凭据在 Git Credential Manager 里）。
+仓库已上线：<https://github.com/SESZFY/DSH-Plugin_Better-Wishing>。日常更新直接 `git push`（凭据在 Git Credential Manager 里）。
 
 ```powershell
 $env:GITHUB_TOKEN = "ghp_xxx"; .\push.ps1          # Windows
@@ -294,7 +295,7 @@ Token 权限：classic 勾 `repo`；fine-grained 给 `Contents=write` + `Adminis
 不想给 token 也可走网页：GitHub 新建空仓库（不要初始化 README）→
 
 ```bash
-git remote add origin https://github.com/SESZFY/dsh-ai4s-stack.git
+git remote add origin https://github.com/SESZFY/DSH-Plugin_Better-Wishing.git
 git push -u origin main --tags
 ```
 
