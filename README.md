@@ -1,5 +1,5 @@
-# dsh-ai4s-stack
-
+# DSH插件:更好的许愿,单次提示词即可全自动完成长时间大型任务,适合全自动AI4S和全自动Coding
+集群模式自主分工,一句话就能完成大型任务.自主纠错.真正地全自动开发
 两个 [DSH（DeepSeek Harness）](https://github.com/deepseek-ai) 插件打包在一起，一条命令装完。
 
 站点：<https://seszfy.github.io/dsh-ai4s-stack/> —— 已上线（Pages 源：`main` + `/docs`）
