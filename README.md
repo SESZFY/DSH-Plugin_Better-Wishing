@@ -179,7 +179,7 @@ dsh plugin --profile web remove dsh-skill-mcp-panel dsh-ai4s-composer
 | `delegate` | 每轮自动开 1 个只读子代理（分析/取证），结论回灌主代理。 |
 | `cluster` | 先让规划模型把请求拆成互不重复的子任务，并行开多个只读子代理；主代理可用 `cluster_delegate` 工具分批追加。 |
 
-子代理被 `tools.guard` + `tools.restrict` 双重限制为**只读**（`read` / `glob` / `grep` / `web_search` / `web_fetch`），执行动作必须回到主代理——这是设计约束，不是配置项。
+初始子代理被 `tools.guard` + `tools.restrict` 双重限制为**只读**（`read` / `glob` / `grep` / `web_search` / `web_fetch`），执行动作必须回到主代理——这是设计约束，不是配置项。
 
 ### 改模式
 
