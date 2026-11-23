@@ -3,8 +3,6 @@
 
 两个 [DSH（DeepSeek Harness）](https://github.com/deepseek-ai) 插件打包在一起，一条命令装完。
 
-站点：<https://seszfy.github.io/dsh-ai4s-stack/> —— 已上线（Pages 源：`main` + `/docs`）
-
 > 需要用浏览器手动传的场合（换机、无凭据）：看 [UPLOAD-BY-WEB.md](UPLOAD-BY-WEB.md)。
 
 | 插件 | 作用 | 形态 |
